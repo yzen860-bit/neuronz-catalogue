@@ -78,6 +78,9 @@ foreach ( array( 'nnz_sync_log', 'nnz_recheck_log', 'nnz_recheck_changes' ) as $
 file_put_contents( $state_file, json_encode( $keep,
 	JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "\n" );
 
+// Embed the data minified, whether or not this run refreshed it, so the page
+// does not change shape between local and scheduled builds.
+update_option( 'nnz_catalogue_json', wp_json_encode( $catalogue ) );
 $html = nnz_build_standalone();
 
 // A slim bar linking back to the WordPress.com site, which carries the
