@@ -35,6 +35,8 @@ function is_wp_error( $thing ) {
 function add_shortcode() {}
 function add_action() {}
 function add_filter() {}
+function register_activation_hook() {}
+function register_deactivation_hook() {}
 
 function plugin_dir_path( $file ) {
 	return rtrim( dirname( $file ), '/\\' ) . '/';
@@ -69,6 +71,9 @@ function wp_parse_url( $url ) {
 	return parse_url( $url );
 }
 
+function esc_html( $text ) {
+	return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+}
 function esc_url( $url ) {
 	return htmlspecialchars( $url, ENT_QUOTES, 'UTF-8' );
 }

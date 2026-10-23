@@ -85,10 +85,7 @@ $html = nnz_build_standalone();
 
 // A slim bar linking back to the WordPress.com site, which carries the
 // introduction and methods pages for this catalogue.
-$bar = '<nav aria-label="Site" style="background:#0F1F38;font:500 13px/1 \'IBM Plex Sans\',system-ui,sans-serif">'
-	. '<div style="max-width:1240px;margin:0 auto;padding:11px clamp(16px,3vw,40px)">'
-	. '<a href="' . esc_url( NNZ_HOME_URL ) . '" style="color:#E6EEFF;text-decoration:none">&larr; '
-	. htmlspecialchars( NNZ_HOME_LABEL ) . '</a></div></nav>';
+$bar = nnz_home_bar( NNZ_HOME_URL, NNZ_HOME_LABEL );
 $html = preg_replace( '/<body>\n/', "<body>\n" . $bar . "\n", $html, 1 );
 
 if ( ! is_dir( dirname( $out ) ) ) {

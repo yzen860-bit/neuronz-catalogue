@@ -2,7 +2,7 @@
 /**
  * Plugin Name:  NeuroNZ Catalogue
  * Description:  Searchable register of New Zealand data sources on neurological conditions. Adds the [neuronz_catalogue] shortcode and an admin screen for refreshing the data from Zotero.
- * Version:      0.6.1
+ * Version:      0.7.0
  * Requires PHP: 7.4
  * Author:       Yuxiang Zeng — COMPASS Research Centre
  * License:      GPL-2.0-or-later
@@ -17,7 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'NNZ_VERSION', '0.6.1' );
+define( 'NNZ_VERSION', '0.7.0' );
+// The NeuroNZ Zotero group, used until a different library is saved in settings.
+define( 'NNZ_DEFAULT_LIBRARY_ID', '6708514' );
 define( 'NNZ_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NNZ_URL', plugin_dir_url( __FILE__ ) );
 define( 'NNZ_DATA_FILE', NNZ_DIR . 'data/catalogue.json' );
@@ -99,6 +101,7 @@ function nnz_render_shortcode( $atts = array() ) {
 		'width'   => 'wide',    // wide | full | content
 		'heading' => 'on',      // on | off — off suits a page that already has a title
 		'panel'   => 'off',     // on gives the block its own background
+		'home'    => '',        // URL: adds a "back to home" bar above the catalogue
 	), $atts, 'neuronz_catalogue' );
 
 	$class = 'nnz';
@@ -115,8 +118,39 @@ function nnz_render_shortcode( $atts = array() ) {
 			'class="masthead is-bare" id="nnz-masthead"', $html );
 	}
 
-	return '<div class="' . esc_attr( $class ) . '">' . $html . '</div>';
+	return '<div class="' . esc_attr( $class ) . '">' . nnz_home_bar( $atts['home'] ) . $html . '</div>';
 }
+
+/**
+ * A slim bar linking back to the site's home page, for a catalogue page that
+ * uses a template without the theme header. Same look as the hosted export.
+ */
+function nnz_home_bar( $url, $label = 'NeuroNZ home' ) {
+	if ( ! $url ) {
+		return '';
+	}
+	return '<nav aria-label="Site" style="background:#0F1F38;font:500 13px/1 \'IBM Plex Sans\',system-ui,sans-serif">'
+		. '<div style="max-width:1240px;margin:0 auto;padding:11px clamp(16px,3vw,40px)">'
+		. '<a href="' . esc_url( $url ) . '" style="color:#E6EEFF;text-decoration:none">&larr; '
+		. esc_html( $label ) . '</a></div></nav>';
+}
+
+/* -------------------------------------------------------------------------
+ * Weekly refresh
+ *
+ * Zotero is the source of truth, so the catalogue refreshes itself once a week.
+ * A failed run changes nothing and is recorded in the refresh history.
+ * ---------------------------------------------------------------------- */
+
+add_action( 'init', function () {
+	if ( ! wp_next_scheduled( 'nnz_weekly_sync' ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'weekly', 'nnz_weekly_sync' );
+	}
+} );
+add_action( 'nnz_weekly_sync', 'nnz_sync_from_zotero' );
+register_deactivation_hook( __FILE__, function () {
+	wp_clear_scheduled_hook( 'nnz_weekly_sync' );
+} );
 
 /* -------------------------------------------------------------------------
  * Admin screen
@@ -137,7 +171,7 @@ add_action( 'admin_init', function () {
 		'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => 'groups',
 	) );
 	register_setting( 'nnz_settings', 'nnz_zotero_library_id', array(
-		'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => '',
+		'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => NNZ_DEFAULT_LIBRARY_ID,
 	) );
 	register_setting( 'nnz_settings', 'nnz_zotero_api_key', array(
 		'type' => 'string', 'sanitize_callback' => 'sanitize_text_field', 'default' => '',
@@ -193,6 +227,8 @@ function nnz_admin_page() {
 				heading is not stated twice.</td></tr>
 			<tr><td><code>panel="on"</code></td><td>Gives the block its own background. By default
 				it is transparent and sits on the page background.</td></tr>
+			<tr><td><code>home="https://…"</code></td><td>Adds a slim bar above the catalogue linking
+				back to that address. Use it on a page whose template has no site header.</td></tr>
 			</tbody>
 		</table>
 		<p>For a page that has its own title:
@@ -217,7 +253,7 @@ function nnz_admin_page() {
 				<tr>
 					<th scope="row"><label for="nnz-lid">Library ID</label></th>
 					<td><input type="text" id="nnz-lid" name="nnz_zotero_library_id" class="regular-text"
-							value="<?php echo esc_attr( get_option( 'nnz_zotero_library_id', '' ) ); ?>"></td>
+							value="<?php echo esc_attr( get_option( 'nnz_zotero_library_id', NNZ_DEFAULT_LIBRARY_ID ) ); ?>"></td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="nnz-key">API key</label></th>
@@ -237,6 +273,10 @@ function nnz_admin_page() {
 		</form>
 
 		<h2>Refresh from Zotero</h2>
+		<p>The catalogue also refreshes itself once a week<?php
+			$next = wp_next_scheduled( 'nnz_weekly_sync' );
+			echo $next ? ' (next: ' . esc_html( get_date_from_gmt( gmdate( 'Y-m-d H:i:s', $next ), 'j M Y, H:i' ) ) . ')' : '';
+			?>. Use the button to refresh straight away.</p>
 		<p>Fetches <code>01 Catalogue Sources</code> and all of its subfolders and rebuilds the
 			published records. Each data source takes its category from the subfolder it sits in.
 			Existing entries are matched on <code>NeuroNZ Record ID</code>, so a refresh
@@ -527,7 +567,7 @@ function nnz_publication_from_item( $it, $meta, $conditions ) {
 
 function nnz_sync_from_zotero() {
 	$type = get_option( 'nnz_zotero_library_type', 'groups' );
-	$id   = trim( (string) get_option( 'nnz_zotero_library_id', '' ) );
+	$id   = trim( (string) get_option( 'nnz_zotero_library_id', NNZ_DEFAULT_LIBRARY_ID ) );
 	if ( '' === $id ) {
 		return new WP_Error( 'nnz_noid', 'Set the Zotero library ID before refreshing.' );
 	}
