@@ -4,27 +4,39 @@ A searchable register of New Zealand data sources on neurological conditions,
 with a list of related research publications. Built for Te Huinga Hāpai Tāngata
 COMPASS Research Centre and the Neurological Alliance of New Zealand.
 
-- **Catalogue:** published from this repository with GitHub Pages
-- **Introduction and methods:** https://neuronz6.wpcomstaging.com
+- **Live site:** https://neuronz6.wpcomstaging.com — home page and
+  [data catalogue](https://neuronz6.wpcomstaging.com/data-catalogue/)
 - **Source of records:** the NeuroNZ Zotero group library (ID `6708514`)
+- **This repository:** the WordPress plugin that renders the catalogue, plus tools
 
-## How it stays up to date
+## How it works
 
-Zotero is the source of truth. A scheduled GitHub Action
-(`.github/workflows/update.yml`) does the rest:
+The catalogue is the `neuronz-catalogue` WordPress plugin, installed on the
+WordPress.com site (Personal plan or above is needed to install plugins). The
+catalogue page holds one shortcode:
 
-| When | What |
-|---|---|
-| Every Monday, 18:00 UTC | Refresh from Zotero, rebuild the page, publish |
-| 1st of each month | The same, plus a re-check of every source link |
-| Any time | Actions → **Update catalogue** → **Run workflow** (tick the box to check links) |
+```
+[neuronz_catalogue width="full" panel="on" home="https://neuronz6.wpcomstaging.com"]
+```
 
-Each run commits the updated `data/` and `docs/` so the next run starts from it.
-Link status, verification dates and the evidence log are not stored in Zotero, so
-they are carried forward from `data/catalogue.json` rather than overwritten.
+Zotero is the source of truth. The plugin refreshes itself from Zotero once a
+week; **Settings → NeuroNZ Catalogue** has a button to refresh straight away, a
+link re-check, and exports of the catalogue as a standalone page or JSON.
 
-To add or correct a record, change it in Zotero, then run the workflow (or wait
-for Monday).
+Link status, verification dates and the evidence log are not stored in Zotero,
+so a refresh carries them forward rather than overwriting them.
+
+## GitHub Pages
+
+The catalogue was first hosted here on GitHub Pages. It has moved to the
+WordPress site, and `docs/index.html` is now a redirect: old links, including
+record anchors such as `#NZNEURO-006`, land on the same record there.
+
+## Updating the plugin
+
+1. Edit `plugin/neuronz-catalogue/` and bump the version in its header.
+2. Zip the `neuronz-catalogue` folder and upload it under **Plugins → Upload**
+   on the WordPress site, choosing to replace the installed version.
 
 ## Layout
 
@@ -32,27 +44,25 @@ for Monday).
 plugin/neuronz-catalogue/   the WordPress plugin: sync, link check, page assets
 build/build.php             runs the plugin's code from the command line
 build/wp-shim.php           the small part of WordPress that code needs
-data/catalogue.json         the catalogue as last built
-data/state.json             refresh and link-check history
-docs/index.html             the published page (generated; do not edit)
+data/catalogue.json         catalogue snapshot used by the command-line build
+docs/index.html             GitHub Pages redirect to the WordPress catalogue
 ```
 
-The page is the plugin's own standalone export, so the hosted catalogue and the
-plugin always look and behave the same. To change the interface, edit
-`plugin/neuronz-catalogue/assets/` and push; the page is rebuilt automatically.
+## Command-line build (optional)
 
-## Running locally
+Builds the same standalone page the plugin exports, without WordPress — useful
+for testing interface changes locally or producing an offline copy.
 
 ```
-php build/build.php                          # rebuild from data/
+php build/build.php                          # write dist/index.html from data/
 php build/build.php --sync                   # refresh from Zotero first
 php build/build.php --sync --check-links     # and re-check links
 ```
 
 Needs PHP 7.4+ with the curl and mbstring extensions. Optional environment
 variables: `ZOTERO_LIBRARY_TYPE` (default `groups`), `ZOTERO_LIBRARY_ID`
-(default `6708514`), `ZOTERO_API_KEY` (only for a private library — store it as a
-repository secret, never in a file).
+(default `6708514`), `ZOTERO_API_KEY` (only for a private library — never commit
+it to a file).
 
 ## Credits
 

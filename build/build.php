@@ -2,7 +2,7 @@
 /**
  * Build the public catalogue page from the plugin's own code.
  *
- *   php build/build.php                     rebuild docs/index.html from data/
+ *   php build/build.php                     rebuild dist/index.html from data/
  *   php build/build.php --sync              refresh from Zotero first
  *   php build/build.php --sync --check-links   ...and re-check every source link
  *
@@ -24,7 +24,7 @@ const NNZ_HOME_URL   = 'https://neuronz6.wpcomstaging.com';
 const NNZ_HOME_LABEL = 'NeuroNZ home';
 
 $opts = getopt( '', array( 'sync', 'check-links', 'out::' ) );
-$out  = isset( $opts['out'] ) ? $opts['out'] : $root . '/docs/index.html';
+$out  = isset( $opts['out'] ) ? $opts['out'] : $root . '/dist/index.html';
 
 $data_file  = $root . '/data/catalogue.json';
 $state_file = $root . '/data/state.json';

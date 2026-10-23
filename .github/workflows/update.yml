@@ -1,85 +1,35 @@
-name: Update catalogue
+name: Publish redirect
 
-# Weekly: refresh from Zotero and republish.
-# Monthly: the same, plus a re-check of every source link.
-# Any time: Actions -> Update catalogue -> Run workflow.
+# The catalogue now lives on the WordPress site, where the plugin refreshes it
+# from Zotero every week. GitHub Pages only serves docs/index.html, which sends
+# old links (including #record anchors) to the WordPress catalogue page.
 on:
-  schedule:
-    - cron: "0 18 * * 1"    # Mondays 18:00 UTC = Tuesday morning in NZ
-    - cron: "30 18 1 * *"   # 1st of the month: also check links
-  workflow_dispatch:
-    inputs:
-      check_links:
-        description: "Also re-check every source link (about 2 minutes)"
-        type: boolean
-        default: false
   push:
     branches: [main]
     paths:
-      - "plugin/**"
-      - "build/**"
-      - "data/**"
+      - "docs/**"
       - ".github/workflows/**"
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: catalogue
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check PHP
-        run: |
-          php -v
-          php -m | grep -E '^(curl|mbstring|json)$'
-
-      - name: Refresh from Zotero
-        if: github.event_name != 'push'
-        env:
-          # Optional: only needed if the Zotero group is ever made private.
-          ZOTERO_API_KEY: ${{ secrets.ZOTERO_API_KEY }}
-        run: |
-          args="--sync"
-          if [ "${{ github.event.schedule }}" = "30 18 1 * *" ] || [ "${{ inputs.check_links }}" = "true" ]; then
-            args="$args --check-links"
-          fi
-          php build/build.php $args
-
-      - name: Rebuild page
-        if: github.event_name == 'push'
-        run: php build/build.php
-
-      - name: Save updated data
-        if: github.event_name != 'push'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data docs
-          if git diff --cached --quiet; then
-            echo "No changes."
-          else
-            git commit -m "Update catalogue from Zotero"
-            git push
-          fi
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
       - id: deployment
         uses: actions/deploy-pages@v4
