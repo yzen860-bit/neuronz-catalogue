@@ -20,7 +20,7 @@ require __DIR__ . '/wp-shim.php';
 require $root . '/plugin/neuronz-catalogue/neuronz-catalogue.php';
 
 // Where "back to the NeuroNZ site" points from the hosted page.
-const NNZ_HOME_URL   = 'https://neuronz6.wordpress.com';
+const NNZ_HOME_URL   = 'https://neuronz6.wpcomstaging.com';
 const NNZ_HOME_LABEL = 'NeuroNZ home';
 
 $opts = getopt( '', array( 'sync', 'check-links', 'out::' ) );

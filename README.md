@@ -5,7 +5,7 @@ with a list of related research publications. Built for Te Huinga Hāpai Tāngat
 COMPASS Research Centre and the Neurological Alliance of New Zealand.
 
 - **Catalogue:** published from this repository with GitHub Pages
-- **Introduction and methods:** https://neuronz6.wordpress.com
+- **Introduction and methods:** https://neuronz6.wpcomstaging.com
 - **Source of records:** the NeuroNZ Zotero group library (ID `6708514`)
 
 ## How it stays up to date
